@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>온라인 연수 등록부</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
+    body { background-color: #f4f3ff; padding: 15px; color: #333; }
+    
+    /* 상단 배너 카드 */
+    .header-card {
+      background: linear-gradient(135deg, #eeeaff 0%, #ffffff 100%);
+      border-radius: 24px;
+      padding: 30px 20px;
+      text-align: center;
+      box-shadow: 0 10px 20px rgba(112, 0, 255, 0.05);
+      margin-bottom: 15px;
+      position: relative;
+      overflow: hidden;
+    }
+    .badge {
+      display: inline-block;
+      background: #e8e3ff;
+      color: #6c5ce7;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #5c3be8;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+    .subtitle { font-size: 14px; color: #666; line-height: 1.5; }
+
+    /* 참가자/관리자 탭 버튼 */
+    .tab-group { display: flex; gap: 10px; margin-bottom: 15px; }
+    .tab-btn {
+      flex: 1; padding: 14px; border: none; border-radius: 16px;
+      font-size: 15px; font-weight: bold; cursor: pointer; text-align: center;
+    }
+    .tab-active { background: #6c5ce7; color: white; box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3); }
+    .tab-inactive { background: white; color: #5c3be8; border: 1px solid #e2dbff; }
+
+    /* Main 서식 입력 카드 */
+    .content-card {
+      background: white; border-radius: 24px; padding: 25px 20px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.03);
+    }
+    .step-badge { font-size: 11px; color: #6c5ce7; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; }
+    .step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .step-title { font-size: 18px; font-weight: bold; color: #222; }
+    .step-num { background: #8c7ae6; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; }
+    
+    .input-group { margin-bottom: 18px; }
+    .input-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #444; }
+    .input-group input {
+      width: 100%; padding: 14px; border: 1px solid #e1e1e1; border-radius: 14px;
+      font-size: 15px; background: #fafafa; outline: none; transition: 0.2s;
+    }
+    .input-group input:focus { border-color: #6c5ce7; background: #fff; }
+
+    /* 서명 영역 */
+    canvas {
+      width: 100%; height: 140px; border: 1px dashed #b2bec3;
+      border-radius: 14px; background: #fafafa; touch-action: none;
+    }
+    .clear-link { display: inline-block; font-size: 12px; color: #ff7675; margin-top: 5px; cursor: pointer; text-decoration: underline; }
+
+    /* 제출 버튼 */
+    .submit-btn {
+      width: 100%; padding: 16px; background: #6c5ce7; color: white;
+      border: none; border-radius: 16px; font-size: 16px; font-weight: bold;
+      margin-top: 10px; cursor: pointer; box-shadow: 0 8px 15px rgba(108, 92, 231, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 상단 카드 -->
+  <div class="header-card">
+    <div class="badge">✍️ 온라인 연수 등록부</div>
+    <div class="title">SIGN-ON</div>
+    <div class="subtitle">온라인에서 편하게 서명하세요.<br>배움이 넘치는 연수가 되길 응원합니다!</div>
+  </div>
+
+  <!-- 탭 버튼 -->
+  <div class="tab-group">
+    <button class="tab-btn tab-active">참가자 서명</button>
+    <button class="tab-btn tab-inactive" onclick="alert('관리자 페이지 준비 중입니다.')">관리자</button>
+  </div>
+
+  <!-- 입력 카드 -->
+  <div class="content-card">
+    <div class="step-header">
+      <div>
+        <div class="step-badge">STEP 1</div>
+        <div class="step-title">참가자 정보 입력</div>
+      </div>
+      <div class="step-num">1</div>
+    </div>
+
+    <div class="input-group">
+      <label>이름</label>
+      <input type="text" id="name" placeholder="이름 입력">
+    </div>
+
+    <div class="input-group">
+      <label>소속 (학교/기관명)</label>
+      <input type="text" id="org" placeholder="소속 입력">
+    </div>
+
+    <div class="input-group">
+      <label>참가자 서명</label>
+      <canvas id="signature-pad"></canvas>
+      <span class="clear-link" onclick="clearCanvas()">서명 다시 하기</span>
+    </div>
+
+    <button class="submit-btn" onclick="sendData()">등록 완료하기</button>
+  </div>
+
+  <script>
+    // ★ 3단계에서 얻은 구글 앱스스크립트 배포 주소를 아래에 넣으세요!
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbw8oVMK9BlMGLkfSo-aT-IG06K6SOexF-qEPOZQwuAVunz0DPXbStXfPgrT-praDNU/exec";
+
+    const canvas = document.getElementById('signature-pad');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+
+    function resizeCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener('load', resizeCanvas);
+
+    function startDrawing(e) { isDrawing = true; draw(e); }
+    function stopDrawing() { isDrawing = false; ctx.beginPath(); }
+    function draw(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#2d3436';
+
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchmove', draw);
+
+    function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+    function sendData() {
+      const name = document.getElementById('name').value;
+      const org = document.getElementById('org').value;
+      const signature = canvas.toDataURL();
+
+      if (!name || !org) {
+        alert('이름과 소속을 모두 입력해 주세요!');
+        return;
+      }
+
+      alert('등록 처리 중입니다...');
+
+      fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, org: org, signature: signature })
+      })
+      .then(() => {
+        alert('성공적으로 등록되었습니다!');
+        clearCanvas();
+        document.getElementById('name').value = '';
+        document.getElementById('org').value = '';
+      })
+      .catch(error => alert('오류가 발생했습니다: ' + error));
+    }
+  </script>
+</body>
+</html>
